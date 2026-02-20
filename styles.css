@@ -1,0 +1,15 @@
+/* styles.css - Minimal modern styling for CampusXchange Lite */
+:root{
+  --muted:#6c757d;
+}
+body{background:#f8f9fa; font-family: Inter, system-ui, Arial, sans-serif}
+.card-img-top{height:180px; object-fit:cover}
+.navbar-brand{font-weight:600}
+.listing-card .card-body{min-height:140px}
+.chip{display:inline-block;padding:.2rem .5rem;border-radius:999px;background:#eef2ff;color:#2a2a86;font-size:.8rem}
+.small-muted{color:var(--muted);font-size:.9rem}
+
+/* responsive tweaks */
+@media (max-width:576px){
+  .card-img-top{height:200px}
+}

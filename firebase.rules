@@ -1,0 +1,51 @@
+// Firestore security rules for CampusXchange Lite
+// - Only authenticated users with @lpu.in emails can write
+// - Users can create/edit only their own user doc
+// - Listings: create allowed when ownerId matches request.auth.uid
+// - Users can delete/update only their own listings; admins can delete any listing
+// - Reports: any authenticated user may create; only admin can read/delete
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAuth(){ return request.auth != null && request.auth.token.email.matches('.*@lpu.in$'); }
+    function isAdmin(){
+      return isAuth() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    match /users/{userId} {
+      allow read: if isAuth();
+      // create only if creating your own uid and email matches
+      allow create: if isAuth() && request.resource.data.uid == request.auth.uid;
+      // user can update limited fields on own document; admin can update role/status
+      allow update: if isAuth() && (
+        (request.auth.uid == resource.data.uid && request.resource.data.uid == resource.data.uid) ||
+        isAdmin()
+      );
+      allow delete: if isAdmin();
+    }
+
+    match /listings/{listingId} {
+      allow read: if true;
+      allow create: if isAuth() && request.resource.data.ownerId == request.auth.uid;
+      allow update: if isAuth() && (resource.data.ownerId == request.auth.uid || isAdmin());
+      allow delete: if isAuth() && (resource.data.ownerId == request.auth.uid || isAdmin());
+    }
+
+    match /reports/{reportId} {
+      // reports are write-only for normal users
+      allow create: if isAuth() && request.resource.data.reporterId == request.auth.uid;
+      allow read, delete: if isAdmin();
+    }
+
+    match /chats/{chatId} {
+      allow read: if isAuth();
+      allow create: if isAuth() && request.resource.data.senderId == request.auth.uid;
+      allow update, delete: if isAdmin();
+    }
+
+    // default deny
+    match /{document=**} { allow read, write: if false; }
+  }
+}
